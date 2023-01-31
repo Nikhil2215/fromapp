@@ -8,10 +8,13 @@ import {
   SafeAreaView,
   Alert,
   Image,
+  FlatList,
+  LogBox,
 } from 'react-native';
 import React, {useState, useEffect} from 'react';
 import CustomInput from '../components/CustomInput';
 import CustomPassword from '../components/CustomPassword';
+import ImagePicker from 'react-native-image-crop-picker';
 import CustomRadio from '../components/CustomRadio';
 import CustomDropdown from '../components/CustomDropdown';
 import {useForm, Controller} from 'react-hook-form';
@@ -21,23 +24,34 @@ import CustomButton from '../components/CustomButton';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {check, PERMISSIONS, RESULTS, request} from 'react-native-permissions';
-import MultipleDropDown from '../components/CustomCheckBox';
+import MultipleDropDown from '../components/multiple';
+import CustomSwitch from '../components/Customswitch';
+import CustomSlider from '../components/CustomSlider';
+import Addto from '../components/addto';
 
 import CheckBox from 'react-native-check-box';
+import {object} from 'prop-types';
 
 const Form = () => {
   const {
     control,
     setValue,
     handleSubmit,
+    watch,
     formState: {errors},
   } = useForm();
+  const pwd = watch('password');
   const [date, setDate] = useState(new Date());
   const [mode, setMode] = useState('date');
   const [show, setShow] = useState(false);
-  const [formdata, setFormData] = useState({ProfileImage: ''});
-  const [imageUri, setImageUri] = useState('');
-
+  const [formdata, setFormData] = useState({
+    ProfileImage: '',
+    hobby: [{name: '', Isadded: false}],
+    language: [{name: '', Isadded: false}],
+  });
+  useEffect(() => {
+    LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
+  }, []);
   const onChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
     setShow(Platform.OS === 'ios');
@@ -50,9 +64,6 @@ const Form = () => {
 
   const [hobby, sethobby] = useState(['']);
 
-  const addTextField = () => {
-    sethobby([...hobby, '']);
-  };
   const [checkboxState, setCheckboxState] = useState({
     Assam: false,
     Uttarakhand: false,
@@ -66,14 +77,43 @@ const Form = () => {
     setValue(name, !checkboxState[name]);
   };
 
+  const addTextField = index => {
+    let temp = formdata.hobby;
+    temp[index].Isadded = true;
+    temp.push({name: '', Isadded: false});
+    setFormData(Object.assign({}, formdata, {hobby: temp}));
+    console.log(formdata);
+  };
+
   const handleChange = (index, text) => {
-    const newTextFields = [...hobby];
-    newTextFields[index] = text;
-    sethobby(newTextFields);
+    let temp = formdata.hobby;
+    temp[index].name = text;
+    setFormData(Object.assign({}, formdata, {hobby: temp}));
+    console.log(temp);
   };
   const handleRemove = (index, item) => {
-    let deletedata = hobby.filter((data, key) => key != index);
-    sethobby(deletedata);
+    let temp = formdata.hobby;
+    let deletedata = temp.filter((data, key) => key != index);
+    setFormData(Object.assign({}, formdata, {hobby: deletedata}));
+  };
+  const addTextField1 = index => {
+    let temp = formdata.language;
+    temp[index].Isadded = true;
+    temp.push({name: '', Isadded: false});
+    setFormData(Object.assign({}, formdata, {language: temp}));
+    console.log(formdata);
+  };
+
+  const handleChange1 = (index, text) => {
+    let temp = formdata.language;
+    temp[index].name = text;
+    setFormData(Object.assign({}, formdata, {language: temp}));
+    console.log(temp);
+  };
+  const handleRemove1 = (index, item) => {
+    let temp = formdata.language;
+    let deletedata = temp.filter((data, key) => key != index);
+    setFormData(Object.assign({}, formdata, {language: deletedata}));
   };
 
   const Submit = data => {
@@ -165,52 +205,30 @@ const Form = () => {
   };
 
   const openCamera = () => {
-    const options = {
-      storageoptions: {
-        path: 'images',
-        mediaType: 'photo',
-      },
-      includeBase64: true,
-    };
-
-    launchCamera(options, res => {
-      if (res.didCancel) {
-      } else if (res.errorCode) {
-      } else if (res.assets[0].fileSize < 10000000) {
-        // setFilePath(res.assets[0]);
-        // setPicture({uri: res.assets[0].uri});
-        const source = {uri: res.assets[0].uri};
-        console.log(source);
-        setImageUri(source);
-      } else {
-        Alert.alert('Image size should be less than 10 MB');
-      }
+    ImagePicker.openCamera({
+      width: 300,
+      height: 400,
+      cropping: true,
+    }).then(image => {
+      let source = {uri: image.path};
+      setFormData(Object.assign({}, formdata, {ProfileImage: source}));
     });
   };
 
   const openGallery = () => {
-    const options = {
-      storageoptions: {
-        path: 'images',
-        mediaType: 'photo',
-      },
-      includeBase64: true,
-    };
-    launchImageLibrary(options, res => {
-      if (res.didCancel) {
-      } else if (res.errorCode) {
-      } else if (res.assets[0].fileSize < 10000000) {
-        // setFilePath(res.assets[0]);
-        // setPicture({uri: res.assets[0].uri});
-        const source = {uri: res.assets[0].uri};
-        console.log(source);
-        setImageUri(source);
-        setFormData;
-      } else {
-        Alert.alert('Image size should be less than 10 MB');
-      }
+    ImagePicker.openPicker({
+      width: 300,
+      height: 400,
+      cropping: true,
+    }).then(image => {
+      let source = {uri: image.path};
+      setFormData(Object.assign({}, formdata, {ProfileImage: source}));
     });
   };
+
+  const EMAIL_REGEX = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  const PASS_REGEX = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+  const NAME_REGEX = /^[a-zA-Z ]*$/;
 
   return (
     <KeyboardAwareScrollView
@@ -218,7 +236,7 @@ const Form = () => {
       bounces={false}>
       <SafeAreaView>
         <View style={{padding: 20}}>
-          {imageUri === '' ? (
+          {formdata.ProfileImage === '' ? (
             <View
               style={{
                 backgroundColor: '#d4cbcf',
@@ -234,7 +252,7 @@ const Form = () => {
           ) : (
             <View style={{marginBottom: 10}}>
               <Image
-                source={imageUri}
+                source={formdata.ProfileImage}
                 style={{height: 100, width: 100, borderRadius: 50}}
               />
             </View>
@@ -254,6 +272,11 @@ const Form = () => {
             placeholder="Enter name"
             rules={{
               required: 'Name is required',
+              minLength: {
+                value: 3,
+                message: 'Password should be at least 3 characters long',
+              },
+              pattern: {value: NAME_REGEX, message: 'Email is invalid'},
             }}
           />
           <CustomPassword
@@ -264,6 +287,25 @@ const Form = () => {
             secureTextEntry
             rules={{
               required: 'Password is required',
+              minLength: {
+                value: 8,
+                message: 'Password should be at least 8 characters long',
+              },
+              pattern: {
+                value: PASS_REGEX,
+                message:
+                  'A password must contain characters, numbers and one special character (@, $, !, &, etc).',
+              },
+            }}
+          />
+          <CustomPassword
+            name="password-repeat"
+            control={control}
+            label={'Repeat Password'}
+            placeholder="Repeat Password"
+            secureTextEntry
+            rules={{
+              validate: value => value === pwd || 'Password do not match',
             }}
           />
           <CustomInput
@@ -273,6 +315,7 @@ const Form = () => {
             placeholder="Enter email"
             rules={{
               required: 'Email is required',
+              pattern: {value: EMAIL_REGEX, message: 'Email is invalid'},
             }}
           />
           <CustomInput
@@ -285,12 +328,86 @@ const Form = () => {
               required: 'Phone number is required',
             }}
           />
+          <CustomInput
+            label={'Landline number'}
+            name="landline"
+            control={control}
+            keyboardType="numeric"
+            placeholder="Enter your number"
+            rules={{
+              required: 'Landline number is required',
+            }}
+          />
+          <CustomInput
+            label={'Zip code'}
+            name="Zipcode"
+            control={control}
+            keyboardType="numeric"
+            placeholder="Enter Zip code"
+            rules={{
+              required: 'Zip code is required',
+            }}
+          />
+          <CustomInput
+            label={'Height in cm'}
+            name="height"
+            control={control}
+            keyboardType="numeric"
+            placeholder="Enter your height"
+            rules={{
+              required: 'Height is required',
+            }}
+          />
+          <CustomInput
+            label={'Weight in kg'}
+            name="weight"
+            control={control}
+            keyboardType="numeric"
+            placeholder="Enter your weight"
+            rules={{
+              required: 'Weight is required',
+            }}
+          />
+          <CustomInput
+            label={'Address'}
+            name="Address"
+            control={control}
+            placeholder="Enter your address"
+            rules={{
+              required: 'Address is required',
+            }}
+          />
 
           <CustomInput
             label={"Father's name"}
             name="FatherName"
             control={control}
             placeholder="Enter your Father's name"
+          />
+          <CustomInput
+            label={"Mother's name"}
+            name="MotherName"
+            control={control}
+            placeholder="Enter your mother's name"
+          />
+          <CustomInput
+            label={'Job title'}
+            name="job_title"
+            control={control}
+            placeholder="Enter your job title"
+            rules={{
+              required: 'Job title is required',
+            }}
+          />
+
+          <CustomInput
+            label={'Company'}
+            name="Company"
+            control={control}
+            placeholder="Enter your company"
+            rules={{
+              required: 'company name is required',
+            }}
           />
           <CustomRadio
             control={control}
@@ -300,6 +417,7 @@ const Form = () => {
               required: 'Gender is required',
             }}
           />
+
           <CustomDropdown
             control={control}
             label={'Select Country'}
@@ -380,34 +498,78 @@ const Form = () => {
           />
           <Text style={styles.heading}>Hobbies</Text>
           <View style={styles.addView}>
-            {hobby.map((text, index) => (
-              <View style={styles.removeView}>
-                <TextInput
-                  style={styles.addInput}
-                  key={index}
-                  value={text}
-                  onChangeText={text => handleChange(index, text)}
-                />
-                {text === '' ? null : (
-                  <Button
-                    title="Remove"
-                    style={styles.removebutton}
-                    onPress={() => handleRemove(index, text)}
-                  />
-                )}
-              </View>
-            ))}
-
-            <Button title="Add" onPress={addTextField} />
+            <FlatList
+              data={formdata.hobby}
+              renderItem={({item, index}) => {
+                return (
+                  <View style={styles.removeView}>
+                    <TextInput
+                      style={styles.addInput}
+                      key={index}
+                      value={item.name}
+                      onChangeText={item => handleChange(index, item)}
+                    />
+                    {item.Isadded === true ? (
+                      <Button
+                        title="Remove"
+                        style={styles.removebutton}
+                        onPress={() => handleRemove(index, item)}
+                      />
+                    ) : (
+                      <Button title="Add" onPress={() => addTextField(index)} />
+                    )}
+                  </View>
+                );
+              }}
+            />
           </View>
+          <Text style={styles.heading}>Language</Text>
+          <View style={styles.addView}>
+            <FlatList
+              data={formdata.language}
+              renderItem={({item, index}) => {
+                return (
+                  <View style={styles.removeView}>
+                    <TextInput
+                      style={styles.addInput}
+                      key={index}
+                      value={item.name}
+                      onChangeText={item => handleChange1(index, item)}
+                    />
+                    {item.Isadded === true ? (
+                      <Button
+                        title="Remove"
+                        style={styles.removebutton}
+                        onPress={() => handleRemove1(index, item)}
+                      />
+                    ) : (
+                      <Button
+                        title="Add"
+                        onPress={() => addTextField1(index)}
+                      />
+                    )}
+                  </View>
+                );
+              }}
+            />
+          </View>
+
           <MultipleDropDown
             control={control}
             name="select"
             label={'Select item'}
+            rules={{
+              required: 'This field required',
+            }}
           />
+          <CustomSwitch />
+          <CustomSlider />
 
           <CustomButton text="Submit" onPress={handleSubmit(Submit)} />
-          <Text>Form Data: {JSON.stringify({formdata, hobby})}</Text>
+          {formdata ? (
+            <Text>Form Data: {JSON.stringify({formdata})}</Text>
+          ) : null}
+          {/* <Text>Form Data: {JSON.stringify({formdata})}</Text> */}
         </View>
       </SafeAreaView>
     </KeyboardAwareScrollView>
